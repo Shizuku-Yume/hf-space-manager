@@ -4,749 +4,924 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>HF Space Manager</title>
-  <!-- 引入 Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-  <!-- 引入科技感字体 Orbitron -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
     }
-    body {
-      font-family: 'Orbitron', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: var(--background-color);
-      color: var(--text-color);
-      padding: 20px;
-      min-height: 100vh;
-      background-image: radial-gradient(rgba(0, 212, 255, 0.1) 1px, transparent 1px), radial-gradient(rgba(255, 0, 255, 0.1) 1px, transparent 1px);
-      background-size: 40px 40px;
-      background-position: 0 0, 20px 20px;
-    }
+
     :root {
-      /* 深色模式变量（默认且唯一） */
-      --background-color: #0A0A1E;
-      --text-color: #E0E0FF;
-      --secondary-text: #A0A0CC;
-      --card-background: rgba(20, 20, 40, 0.7);
-      --card-border: rgba(0, 212, 255, 0.3);
-      --metric-background: rgba(30, 30, 50, 0.6);
-      --metric-border: rgba(0, 212, 255, 0.2);
-      --metric-hover: rgba(40, 40, 70, 0.8);
-      --label-color: #A0A0CC;
-      --action-button-bg: rgba(0, 212, 255, 0.2);
-      --action-button-hover: rgba(0, 212, 255, 0.4);
-      --accent-color: #00D4FF;
-      --neon-pink: #FF00FF;
-      --neon-green: #00FFAA;
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-hover: #f1f5f9;
+      --text-primary: #0f172a;
+      --text-secondary: #64748b;
+      --text-muted: #94a3b8;
+      --border-color: #e2e8f0;
+      --accent-color: #3b82f6;
+      --accent-hover: #2563eb;
+      --success-color: #22c55e;
+      --warning-color: #f59e0b;
+      --danger-color: #ef4444;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
     }
+
+    [data-theme="dark"] {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-card: #1e293b;
+      --bg-hover: #334155;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border-color: #334155;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.5;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
     .container {
       max-width: 1400px;
       margin: 0 auto;
-      padding: 0 15px;
+      padding: 24px;
     }
-    .overview {
-      background: var(--card-background);
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 25px;
-      border: 1px solid var(--card-border);
-      box-shadow: 0 0 10px rgba(0, 212, 255, 0.3), inset 0 0 2px rgba(0, 212, 255, 0.5);
-      transition: background 0.3s ease, border 0.3s ease;
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
     }
-    .overview-title {
-      font-size: 18px;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      font-size: 24px;
       font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Theme Toggle */
+    .theme-toggle {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 16px;
-      color: var(--accent-color);
-      text-shadow: 0 0 5px rgba(0, 212, 255, 0.5);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 6px;
     }
-    #summary {
+
+    .theme-btn {
+      background: none;
+      border: none;
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      color: var(--text-secondary);
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .theme-btn.active {
+      background: var(--accent-color);
+      color: white;
+    }
+
+    .theme-btn:hover:not(.active) {
+      background: var(--bg-hover);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--accent-color);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-hover);
+    }
+
+    .btn-danger {
+      background: var(--danger-color);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      opacity: 0.9;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+    }
+
+    .btn-ghost:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
       display: grid;
       grid-template-columns: repeat(6, 1fr);
-      gap: 12px;
+      gap: 16px;
+      margin-bottom: 24px;
     }
-    #summary div {
-      background: var(--metric-background);
-      padding: 14px;
-      border-radius: 6px;
-      border: 1px solid var(--metric-border);
-      transition: background 0.3s ease;
-      box-shadow: inset 0 0 3px rgba(0, 212, 255, 0.3);
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
     }
-    #summary div {
+
+    .stat-label {
       font-size: 13px;
-      font-weight: 500;
-      color: var(--secondary-text);
+      color: var(--text-secondary);
+      margin-bottom: 8px;
     }
-    #summary span {
-      display: block;
-      font-size: 22px;
+
+    .stat-value {
+      font-size: 24px;
       font-weight: 700;
-      margin-top: 6px;
-      color: var(--text-color);
-      text-shadow: 0 0 3px rgba(0, 212, 255, 0.3);
-      overflow: hidden;
-      text-overflow: ellipsis;
+      color: var(--text-primary);
+    }
+
+    /* Filter Panel */
+    .filter-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .filter-group label {
+      font-size: 14px;
+      color: var(--text-secondary);
       white-space: nowrap;
     }
-    .stats-container {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 24px;
-      margin-top: 20px;
+
+    .filter-group select {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 8px 32px 8px 12px;
+      font-size: 14px;
+      color: var(--text-primary);
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
     }
+
+    .filter-group select:focus {
+      outline: none;
+      border-color: var(--accent-color);
+    }
+
+    .filter-spacer {
+      flex: 1;
+    }
+
+    /* Global Keep-Alive Panel */
+    .keepalive-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .keepalive-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .keepalive-title svg {
+      width: 18px;
+      height: 18px;
+      color: var(--success-color);
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--border-color);
+      transition: 0.3s;
+      border-radius: 24px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background-color: var(--success-color);
+    }
+
+    .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Number Input */
+    .number-input {
+      width: 80px;
+      padding: 6px 10px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      color: var(--text-primary);
+      background: var(--bg-secondary);
+    }
+
+    .number-input:focus {
+      outline: none;
+      border-color: var(--accent-color);
+    }
+
+    /* User Group */
     .user-group {
-      background: var(--card-background);
-      border-radius: 8px;
-      border: 1px solid var(--card-border);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      margin-bottom: 16px;
       overflow: hidden;
-      box-shadow: 0 0 8px rgba(0, 212, 255, 0.2);
-      transition: background 0.3s ease, border 0.3s ease;
+      box-shadow: var(--shadow-sm);
     }
+
     .user-group summary {
-      padding: 16px;
+      padding: 16px 20px;
       font-weight: 600;
       cursor: pointer;
-      color: var(--accent-color);
-      background: var(--metric-background);
-      transition: background 0.2s ease;
-      text-shadow: 0 0 4px rgba(0, 212, 255, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      list-style: none;
     }
-    .user-group summary:hover {
-      background: var(--metric-hover);
-      box-shadow: inset 0 0 5px rgba(0, 212, 255, 0.5);
-    }
+
     .user-group summary::-webkit-details-marker {
-      color: var(--accent-color);
+      display: none;
     }
+
+    .user-group summary::before {
+      content: '';
+      width: 0;
+      height: 0;
+      border-left: 5px solid var(--text-secondary);
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+      transition: transform 0.2s;
+    }
+
+    .user-group[open] summary::before {
+      transform: rotate(90deg);
+    }
+
+    .user-group summary:hover {
+      background: var(--bg-hover);
+    }
+
     .user-servers {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 16px;
       padding: 16px;
     }
-    .server-card {
-      background: var(--metric-background);
-      border-radius: 6px;
+
+    /* Instance Card */
+    .instance-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
       padding: 16px;
-      border: 1px solid var(--metric-border);
-      transition: background 0.2s ease, box-shadow 0.2s ease;
-      min-height: 150px;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 0 5px rgba(0, 212, 255, 0.2);
-      position: relative;
-      overflow: hidden;
+      transition: all 0.2s;
     }
-    .server-card.not-logged-in {
-      min-height: 120px;
+
+    .instance-card:hover {
+      border-color: var(--accent-color);
+      box-shadow: var(--shadow-md);
     }
-    .server-card:hover {
-      background: var(--metric-hover);
-      box-shadow: 0 0 12px rgba(0, 212, 255, 0.4);
-    }
-    .server-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 2px;
-      background: linear-gradient(90deg, var(--accent-color), var(--neon-pink));
-      opacity: 0.7;
-    }
-    .server-header {
+
+    .instance-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       margin-bottom: 12px;
-      font-size: 14px;
     }
-    .server-name {
+
+    .instance-name {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      cursor: pointer;
       flex: 1;
       min-width: 0;
-      cursor: pointer;
-      position: relative;
     }
-    .server-name:hover {
-      opacity: 0.8;
-    }
-    .server-name::after {
-      content: '▼';
-      font-size: 12px;
-      color: var(--accent-color);
-      margin-left: 8px;
-      transition: transform 0.3s ease;
-    }
-    .server-card.info-expanded .server-name::after {
-      transform: rotate(180deg);
-    }
-    .server-name div {
+
+    .instance-name h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      max-width: 100%;
-      font-weight: 500;
-      color: var(--accent-color);
-      text-shadow: 0 0 3px rgba(0, 212, 255, 0.5);
     }
-    .server-flag {
-      width: 20px;
-      height: 20px;
-      border-radius: 6px;
-      flex-shrink: 0;
-      filter: drop-shadow(0 0 3px rgba(0, 212, 255, 0.3));
-    }
-    .metric-grid {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 10px;
-      margin-top: 12px;
-    }
-    .metric-item {
-      background: var(--card-background);
-      padding: 10px;
-      border-radius: 4px;
-      border: 1px solid var(--metric-border);
-      transition: background 0.2s ease;
-      overflow: hidden;
-      box-shadow: inset 0 0 3px rgba(0, 212, 255, 0.2);
-    }
-    .metric-item:hover {
-      background: var(--metric-hover);
-      box-shadow: inset 0 0 5px rgba(0, 212, 255, 0.4);
-    }
-    .metric-label {
-      color: var(--label-color);
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
       font-size: 12px;
-      margin-bottom: 4px;
-      white-space: nowrap;
+      font-weight: 500;
     }
+
+    .status-badge.running {
+      background: rgba(34, 197, 94, 0.1);
+      color: var(--success-color);
+    }
+
+    .status-badge.sleeping {
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--warning-color);
+    }
+
+    .status-badge.stopped {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger-color);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .status-badge.running .status-dot {
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .private-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 6px;
+      background: var(--bg-hover);
+      border-radius: 4px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .metric-item {
+      background: var(--bg-card);
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+    }
+
+    .metric-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
     .metric-value {
       font-size: 14px;
       font-weight: 600;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 100%;
-      color: var(--text-color);
-      text-shadow: 0 0 2px rgba(0, 212, 255, 0.3);
+      color: var(--text-primary);
     }
-    /* 新增信息块样式 */
+
+    /* Info Block */
     .info-block {
-      background: var(--card-background);
-      padding: 10px;
-      border-radius: 4px;
-      border: 1px solid var(--metric-border);
-      margin-top: 12px;
-      transition: background 0.2s ease, height 0.3s ease;
-      overflow: hidden;
-      box-shadow: inset 0 0 3px rgba(0, 212, 255, 0.2);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      margin-bottom: 12px;
       display: none;
     }
-    .server-card.info-expanded .info-block {
+
+    .instance-card.info-expanded .info-block {
       display: block;
     }
-    .info-block:hover {
-      background: var(--metric-hover);
-      box-shadow: inset 0 0 5px rgba(0, 212, 255, 0.4);
-    }
+
     .info-item {
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
+
     .info-item:last-child {
       margin-bottom: 0;
     }
+
     .info-label {
-      color: var(--label-color);
-      font-size: 12px;
-      margin-bottom: 4px;
-      white-space: nowrap;
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
     }
+
     .info-value {
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--text-color);
-      text-shadow: 0 0 2px rgba(0, 212, 255, 0.3);
+      font-size: 13px;
+      color: var(--text-primary);
       overflow: hidden;
       text-overflow: ellipsis;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
-      line-clamp: 2;
     }
-    .status-dot {
-      display: inline-block;
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-      width: 10px;
-      height: 10px;
-      flex-shrink: 0;
-    }
-    .status-online {
-      background-color: var(--neon-green);
-      color: var(--neon-green);
-      box-shadow: 0 0 8px rgba(0, 255, 170, 0.6);
-    }
-    .status-offline {
-      background-color: #ff3b30;
-      color: #ff3b30;
-      box-shadow: 0 0 8px rgba(255, 59, 48, 0.6);
-    }
-    .status-sleep {
-      background-color: var(--neon-pink);
-      color: var(--neon-pink);
-      box-shadow: 0 0 8px rgba(255, 0, 255, 0.6);
-      animation: none;
-    }
+
+    /* Action Buttons */
     .action-buttons {
       display: flex;
-      gap: 10px;
-      margin-top: 12px;
+      gap: 8px;
+      flex-wrap: wrap;
     }
-    .action-button {
-      background: var(--action-button-bg);
-      color: var(--accent-color);
-      border: none;
-      padding: 8px 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
+
+    .action-buttons.logged-out {
+      display: none;
+    }
+
+    /* Schedule Panel */
+    .schedule-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    .instance-card.schedule-expanded .schedule-panel {
+      display: block;
+    }
+
+    .schedule-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .schedule-section:last-child {
+      border-bottom: none;
+    }
+
+    .schedule-label {
+      font-size: 13px;
       font-weight: 500;
-      transition: background 0.2s ease, box-shadow 0.2s ease;
-      text-shadow: 0 0 3px rgba(0, 212, 255, 0.5);
-      position: relative;
-      overflow: hidden;
+      color: var(--text-primary);
+      min-width: 80px;
     }
-    .action-button:hover {
-      background: var(--action-button-hover);
-      box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+
+    .schedule-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
     }
-    .action-button::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(0, 212, 255, 0.2) 0%, transparent 70%);
-      transform: translate(-50%, -50%);
-      opacity: 0;
-      transition: opacity 0.3s ease;
+
+    .schedule-input {
+      width: 70px;
+      padding: 6px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--text-primary);
+      background: var(--bg-secondary);
     }
-    .action-button:hover::after {
-      opacity: 1;
+
+    .schedule-unit {
+      font-size: 13px;
+      color: var(--text-secondary);
     }
-    .network-stats {
-      background: var(--metric-background);
-      border: 1px solid var(--metric-border);
-      margin-top: 20px;
-      padding: 16px;
-      border-radius: 6px;
-      transition: background 0.3s ease;
-      box-shadow: 0 0 5px rgba(0, 212, 255, 0.2);
+
+    .schedule-status {
+      font-size: 12px;
+      color: var(--text-muted);
     }
-    .network-item {
-      font-size: 14px;
-      color: var(--secondary-text);
+
+    /* Chart Container */
+    .chart-container {
+      display: none;
+      margin-top: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      height: 250px;
     }
-    @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(0, 255, 170, 0.6); }
-      70% { box-shadow: 0 0 0 8px rgba(0, 255, 170, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(0, 255, 170, 0); }
+
+    .instance-card.chart-expanded .chart-container {
+      display: block;
     }
-    @media (max-width: 900px) {
-      #summary {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-      }
-      #summary div {
-        padding: 10px;
-      }
-      #summary span {
-        font-size: 20px;
-      }
-      .metric-grid {
-        grid-template-columns: repeat(3, 1fr); /* 与系统概览同步，变为3列 */
-        gap: 8px;
-      }
-      .metric-item {
-        padding: 8px;
-      }
-      .metric-value {
-        font-size: 13px;
-      }
-      .info-block {
-        padding: 8px;
-      }
-      .info-value {
-        font-size: 13px;
-      }
-    }
-    @media (max-width: 600px) {
-      #summary {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
-      }
-      #summary div {
-        padding: 8px;
-      }
-      #summary span {
-        font-size: 18px;
-      }
-      .user-servers {
-        grid-template-columns: 1fr !important;
-      }
-      .metric-grid {
-        grid-template-columns: repeat(2, 1fr); /* 与系统概览同步，变为2列 */
-        gap: 8px;
-      }
-      .metric-item {
-        padding: 6px;
-      }
-      .metric-value {
-        font-size: 13px;
-      }
-      .server-header {
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-      .container {
-        padding: 0 10px;
-      }
-      .overview {
-        padding: 16px;
-        margin-bottom: 20px;
-      }
-      .info-block {
-        padding: 6px;
-      }
-      .info-value {
-        font-size: 12px;
-        -webkit-line-clamp: 1;
-        line-clamp: 1;
-      }
-    }
-    @media (max-width: 400px) {
-      #summary {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 6px;
-      }
-      #summary div {
-        padding: 6px;
-      }
-      #summary span {
-        font-size: 16px;
-      }
-      .metric-grid {
-        grid-template-columns: repeat(2, 1fr); /* 保持2列，进一步优化间距和字体 */
-        gap: 6px;
-      }
-      .metric-item {
-        padding: 5px;
-      }
-      .metric-value {
-        font-size: 12px;
-      }
-      .info-block {
-        padding: 5px;
-      }
-      .info-value {
-        font-size: 11px;
-      }
-    }
-    .login-overlay, .confirm-overlay, .loading-overlay {
+
+    /* Modal */
+    .modal-overlay {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(10, 10, 30, 0.7);
+      background: rgba(0, 0, 0, 0.5);
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 1000;
-      display: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s;
     }
-    .login-box, .confirm-box {
-      background: var(--card-background);
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
       padding: 24px;
-      border-radius: 8px;
-      border: 1px solid var(--card-border);
-      width: 320px;
-      text-align: center;
-      box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
-      position: relative;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: var(--shadow-lg);
+      transform: scale(0.95);
+      transition: transform 0.2s;
     }
-    .login-box::before, .confirm-box::before {
-      content: '';
-      position: absolute;
+
+    .modal-overlay.active .modal {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: var(--text-primary);
+    }
+
+    .modal-body {
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      color: var(--text-primary);
+      background: var(--bg-secondary);
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--accent-color);
+    }
+
+    .form-error {
+      color: var(--danger-color);
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    /* Loading Overlay */
+    .loading-overlay {
+      position: fixed;
       top: 0;
       left: 0;
       width: 100%;
-      height: 3px;
-      background: linear-gradient(90deg, var(--accent-color), var(--neon-pink));
-    }
-    .login-box h2, .confirm-box h2 {
-      margin-bottom: 20px;
-      color: var(--accent-color);
-      font-size: 18px;
-      font-weight: 600;
-      text-shadow: 0 0 5px rgba(0, 212, 255, 0.5);
-    }
-    .login-box input {
-      width: 100%;
-      padding: 12px 16px;
-      margin: 12px 0;
-      border: 1px solid var(--metric-border);
-      border-radius: 6px;
-      background: var(--metric-background);
-      color: var(--text-color);
-      font-size: 16px;
-      transition: border 0.2s ease, box-shadow 0.2s ease;
-    }
-    .login-box input:focus {
-      border-color: var(--accent-color);
-      box-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
-      outline: none;
-    }
-    .login-box button, .confirm-box button {
-      width: 48%;
-      padding: 12px;
-      background: var(--action-button-bg);
-      border: none;
-      border-radius: 6px;
-      color: var(--accent-color);
-      cursor: pointer;
-      font-size: 16px;
-      font-weight: 500;
-      transition: background 0.2s ease, box-shadow 0.2s ease;
-      margin: 10px 1%;
-      text-shadow: 0 0 3px rgba(0, 212, 255, 0.5);
-    }
-    .login-box button:hover, .confirm-box button:hover {
-      background: var(--action-button-hover);
-      box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
-    }
-    .login-box button:last-child, .confirm-box button:last-child {
-      background: transparent;
-      color: var(--neon-pink);
-    }
-    .login-box button:last-child:hover, .confirm-box button:last-child:hover {
-      background: rgba(255, 0, 255, 0.1);
-      box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
-    }
-    .login-error {
-      color: #ff3b30;
-      margin-top: 12px;
-      font-size: 14px;
-      text-shadow: 0 0 3px rgba(255, 59, 48, 0.5);
-    }
-    .login-button, .logout-button {
-      background: var(--action-button-bg);
-      border: none;
-      color: var(--accent-color);
-      padding: 8px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      transition: background 0.2s ease, box-shadow 0.2s ease;
-      text-shadow: 0 0 3px rgba(0, 212, 255, 0.5);
-    }
-    .login-button:hover, .logout-button:hover {
-      background: var(--action-button-hover);
-      box-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
-    }
-    .header-container {
+      height: 100%;
+      background: rgba(0, 0, 0, 0.3);
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
+      justify-content: center;
+      z-index: 2000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s;
     }
-    .auth-buttons {
-      display: flex;
-      gap: 10px;
+
+    .loading-overlay.active {
+      opacity: 1;
+      visibility: visible;
     }
-    /* 加载状态指示器样式 */
-    .loader {
-      border: 5px solid transparent;
-      border-top: 5px solid var(--accent-color);
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border-color);
+      border-top-color: var(--accent-color);
       border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      animation: spin 1s linear infinite;
-      box-shadow: 0 0 15px rgba(0, 212, 255, 0.6);
+      animation: spin 0.8s linear infinite;
     }
+
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      to { transform: rotate(360deg); }
     }
-    /* 优化后的过滤与排序控件样式 */
-    .filter-sort-panel {
-      background: var(--card-background);
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 20px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      align-items: center;
-      box-shadow: 0 0 8px rgba(0, 212, 255, 0.2);
-      transition: background 0.3s ease;
-    }
-    .filter-sort-group {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 14px;
-      color: var(--text-color);
-      min-width: 200px;
-    }
-    .filter-sort-group label {
-      white-space: nowrap;
-      color: var(--secondary-text);
-      font-weight: 500;
-      text-shadow: 0 0 2px rgba(0, 212, 255, 0.3);
-    }
-    .filter-sort-group select {
-      flex: 1;
-      background: var(--metric-background);
-      border: 1px solid var(--metric-border);
-      color: var(--text-color);
-      padding: 10px 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background 0.2s ease, border 0.2s ease, box-shadow 0.2s ease;
-      outline: none;
-      appearance: none;
-      background-image: url("data:image/svg+xml;utf8,<svg fill='%2300D4FF' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
-      background-repeat: no-repeat;
-      background-position: right 10px center;
-      padding-right: 36px;
-      text-shadow: 0 0 2px rgba(0, 212, 255, 0.3);
-    }
-    .filter-sort-group select:hover {
-      background-color: var(--metric-hover);
-      box-shadow: 0 0 6px rgba(0, 212, 255, 0.4);
-    }
-    .filter-sort-group select:focus {
-      border-color: var(--accent-color);
-      box-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
-    }
-    .refresh-button {
-      background: var(--action-button-bg);
-      border: none;
-      color: var(--accent-color);
-      padding: 8px 16px; /* 与 .chart-toggle-button 一致 */
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      transition: background 0.2s ease, box-shadow 0.2s ease;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      text-shadow: 0 0 3px rgba(0, 212, 255, 0.5);
-    }
-    .refresh-button:hover {
-      background: var(--action-button-hover);
-      box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
-    }
-    .refresh-icon {
-      width: 16px;
-      height: 16px;
-      fill: var(--accent-color);
-    }
-    @media (max-width: 600px) {
-      .filter-sort-group {
-        min-width: 100%;
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
       }
-      .filter-sort-panel {
-        gap: 14px;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 16px;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .user-servers {
+        grid-template-columns: 1fr;
+      }
+
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .header-right {
+        justify-content: space-between;
+      }
+
+      .filter-panel {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .filter-group {
+        width: 100%;
+      }
+
+      .filter-group select {
+        flex: 1;
+      }
+
+      .keepalive-panel {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .stat-card {
         padding: 14px;
       }
-    }
-    /* 图表相关样式 */
-    .chart-container {
-      display: none;
-      margin-top: 16px;
-      background: var(--card-background);
-      border: 1px solid var(--card-border);
-      border-radius: 6px;
-      padding: 12px;
-      height: 300px;
-      transition: background 0.3s ease;
-      box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
-    }
-    .chart-toggle-button {
-      background: var(--action-button-bg);
-      color: var(--accent-color);
-      border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      transition: background 0.2s ease, box-shadow 0.2s ease;
-      margin-left: auto;
-      white-space: nowrap;
-      text-shadow: 0 0 3px rgba(0, 212, 255, 0.5);
-    }
-    .chart-toggle-button:hover {
-      background: var(--action-button-hover);
-      box-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
-    }
-    .expanded .chart-container {
-      display: block;
-    }
-    canvas {
-      width: 100% !important;
-      height: auto !important;
-    }
-    @media (max-width: 600px) {
-      .chart-container {
-        height: 250px;
+
+      .stat-value {
+        font-size: 20px;
       }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="overview">
-      <div class="header-container">
-        <div class="overview-title">🤖 系统概览</div>
-        <div class="auth-buttons">
-          <button class="login-button" id="loginButton" onclick="showLoginForm()">登录</button>
-          <button class="logout-button" id="logoutButton" style="display: none;" onclick="logout()">登出</button>
-        </div>
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <h1 class="logo">HF Space Manager</h1>
       </div>
-      <div id="summary">
-        <div>总用户数: <span id="totalUsers">0</span></div>
-        <div>总实例数: <span id="totalServers">0</span></div>
-        <div>在线实例: <span id="onlineServers">0</span></div>
-        <div>离线实例: <span id="offlineServers">0</span></div>
-        <div>总上传: <span id="totalUpload">0 B/s</span></div>
-        <div>总下载: <span id="totalDownload">0 B/s</span></div>
+      <div class="header-right">
+        <div class="theme-toggle">
+          <button class="theme-btn" data-theme="light" title="浅色模式">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"/>
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+          </button>
+          <button class="theme-btn" data-theme="system" title="跟随系统">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2"/>
+              <path d="M8 21h8M12 17v4"/>
+            </svg>
+          </button>
+          <button class="theme-btn" data-theme="dark" title="深色模式">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          </button>
+        </div>
+        <button class="btn btn-primary" id="loginButton" onclick="showLoginModal()">登录</button>
+        <button class="btn btn-secondary" id="logoutButton" style="display: none;" onclick="logout()">登出</button>
       </div>
     </div>
-    <!-- 优化后的过滤与排序面板 -->
-    <div class="filter-sort-panel">
-      <div class="filter-sort-group">
-        <label for="statusFilter">过滤状态:</label>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">总用户数</div>
+        <div class="stat-value" id="totalUsers">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">总实例数</div>
+        <div class="stat-value" id="totalServers">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">运行中</div>
+        <div class="stat-value" id="onlineServers">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">已停止</div>
+        <div class="stat-value" id="offlineServers">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">总上传</div>
+        <div class="stat-value" id="totalUpload">0 B/s</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">总下载</div>
+        <div class="stat-value" id="totalDownload">0 B/s</div>
+      </div>
+    </div>
+
+    <!-- Global Keep-Alive Panel -->
+    <div class="keepalive-panel" id="keepalivePanel" style="display: none;">
+      <div class="keepalive-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+        全局保活设置
+      </div>
+      <div class="filter-group">
+        <label class="toggle-switch">
+          <input type="checkbox" id="globalKeepAliveToggle" onchange="toggleGlobalKeepAlive()">
+          <span class="toggle-slider"></span>
+        </label>
+        <span style="font-size: 14px; color: var(--text-secondary);">启用全局保活</span>
+      </div>
+      <div class="filter-group">
+        <label style="font-size: 14px;">间隔时间:</label>
+        <input type="number" class="number-input" id="globalKeepAliveInterval" value="30" min="1" max="1440">
+        <span style="font-size: 14px; color: var(--text-secondary);">分钟</span>
+      </div>
+      <button class="btn btn-sm btn-secondary" onclick="saveGlobalKeepAlive()">保存设置</button>
+    </div>
+
+    <!-- Filter Panel -->
+    <div class="filter-panel">
+      <div class="filter-group">
+        <label>状态:</label>
         <select id="statusFilter" onchange="applyFiltersAndSort()">
           <option value="all">全部状态</option>
           <option value="running">运行中</option>
@@ -754,335 +929,359 @@
           <option value="stopped">已停止</option>
         </select>
       </div>
-      <div class="filter-sort-group">
-        <label for="userFilter">过滤用户:</label>
+      <div class="filter-group">
+        <label>用户:</label>
         <select id="userFilter" onchange="applyFiltersAndSort()">
           <option value="all">全部用户</option>
         </select>
       </div>
-      <div class="filter-sort-group">
-        <label for="sortBy">排序方式:</label>
+      <div class="filter-group">
+        <label>排序:</label>
         <select id="sortBy" onchange="applyFiltersAndSort()">
           <option value="name-asc">名称 (A-Z)</option>
           <option value="name-desc">名称 (Z-A)</option>
-          <option value="status-asc">状态 (运行-停止)</option>
-          <option value="status-desc">状态 (停止-运行)</option>
+          <option value="status-asc">状态 (运行优先)</option>
+          <option value="status-desc">状态 (停止优先)</option>
         </select>
       </div>
-      <button class="refresh-button" onclick="refreshData()">
-        <svg class="refresh-icon" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+      <div class="filter-spacer"></div>
+      <button class="btn btn-secondary" onclick="refreshData()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 4v6h-6M1 20v-6h6"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
         </svg>
-        刷新数据
+        刷新
       </button>
     </div>
-    <div id="servers" class="stats-container">
-    </div>
+
+    <!-- Instances -->
+    <div id="servers"></div>
   </div>
-  <!-- 登录弹窗 -->
-  <div id="loginOverlay" class="login-overlay">
-    <div class="login-box">
-      <h2>登录</h2>
-      <input type="text" id="username" placeholder="用户名" aria-label="用户名">
-      <input type="password" id="password" placeholder="密码" aria-label="密码">
-      <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
-        <button onclick="login()">登录</button>
-        <button onclick="hideLoginForm()">取消</button>
+
+  <!-- Login Modal -->
+  <div class="modal-overlay" id="loginModal">
+    <div class="modal">
+      <div class="modal-header">登录</div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>用户名</label>
+          <input type="text" id="username" placeholder="请输入用户名">
+        </div>
+        <div class="form-group">
+          <label>密码</label>
+          <input type="password" id="password" placeholder="请输入密码">
+        </div>
+        <div class="form-error" id="loginError" style="display: none;"></div>
       </div>
-      <div id="loginError" class="login-error" style="display: none;"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="hideLoginModal()">取消</button>
+        <button class="btn btn-primary" onclick="login()">登录</button>
+      </div>
     </div>
   </div>
-  <!-- 确认弹窗 -->
-  <div id="confirmOverlay" class="confirm-overlay">
-    <div class="confirm-box">
-      <h2 id="confirmTitle">确认操作</h2>
-      <p id="confirmMessage" style="margin-bottom: 20px; color: var(--text-color);"></p>
-      <button onclick="confirmAction()">确认</button>
-      <button onclick="cancelAction()">取消</button>
+
+  <!-- Confirm Modal -->
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal">
+      <div class="modal-header" id="confirmTitle">确认操作</div>
+      <div class="modal-body">
+        <p id="confirmMessage" style="color: var(--text-secondary);"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="hideConfirmModal()">取消</button>
+        <button class="btn btn-danger" onclick="confirmAction()">确认</button>
+      </div>
     </div>
   </div>
-  <!-- 加载状态覆盖层 -->
-  <div id="loadingOverlay" class="loading-overlay">
-    <div class="loader"></div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
   </div>
 
   <script>
-    // 全局变量，表示当前是否已登录
+    // Global state
     let isLoggedIn = false;
+    let allInstances = [];
+    const instanceMap = new Map();
+    const serverStatus = new Map();
+    const chartInstances = new Map();
+    const chartDataBuffer = new Map();
 
-    // 加载状态控制函数
-    function showLoading() {
-      document.getElementById('loadingOverlay').style.display = 'flex';
+    // Theme management
+    function initTheme() {
+      const saved = localStorage.getItem('theme') || 'system';
+      applyTheme(saved);
+      updateThemeButtons(saved);
     }
 
-    function hideLoading() {
-      document.getElementById('loadingOverlay').style.display = 'none';
-    }
+    function applyTheme(theme) {
+      localStorage.setItem('theme', theme);
+      updateThemeButtons(theme);
 
-    // 登录状态管理
-    function checkLoginStatus() {
-      const token = localStorage.getItem('authToken');
-      const loginButton = document.getElementById('loginButton');
-      const logoutButton = document.getElementById('logoutButton');
-
-      if (token) {
-        console.log('本地存储中找到 token，尝试验证:', token.slice(0, 8) + '...');
-        showLoading();
-        return fetch('/api/verify-token', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ token })
-        })
-        .then(response => response.json())
-        .then(data => {
-          hideLoading();
-          if (data.success) {
-            console.log('Token 验证成功，用户已登录');
-            isLoggedIn = true;
-            loginButton.style.display = 'none';
-            logoutButton.style.display = 'block';
-            updateActionButtons(true);
-          } else {
-            console.log('Token 验证失败，清除本地存储:', data.message);
-            localStorage.removeItem('authToken');
-            isLoggedIn = false;
-            loginButton.style.display = 'block';
-            logoutButton.style.display = 'none';
-            updateActionButtons(false);
-          }
-          return data.success;
-        })
-        .catch(error => {
-          hideLoading();
-          console.error('验证 token 失败，清除本地存储:', error);
-          localStorage.removeItem('authToken');
-          isLoggedIn = false;
-          loginButton.style.display = 'block';
-          logoutButton.style.display = 'none';
-          updateActionButtons(false);
-          return false;
-        });
+      if (theme === 'system') {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
       } else {
-        console.log('本地存储中无 token，显示未登录状态');
-        isLoggedIn = false;
-        loginButton.style.display = 'block';
-        logoutButton.style.display = 'none';
-        updateActionButtons(false);
-        return Promise.resolve(false);
+        document.documentElement.setAttribute('data-theme', theme);
       }
     }
 
-    function showLoginForm() {
-      document.getElementById('loginOverlay').style.display = 'flex';
+    function updateThemeButtons(activeTheme) {
+      document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.theme === activeTheme);
+      });
+    }
+
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.addEventListener('click', () => applyTheme(btn.dataset.theme));
+    });
+
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      if (localStorage.getItem('theme') === 'system') {
+        applyTheme('system');
+      }
+    });
+
+    // Loading state
+    function showLoading() {
+      document.getElementById('loadingOverlay').classList.add('active');
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingOverlay').classList.remove('active');
+    }
+
+    // Login management
+    async function checkLoginStatus() {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        try {
+          showLoading();
+          const response = await fetch('/api/verify-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token })
+          });
+          const data = await response.json();
+          hideLoading();
+
+          if (data.success) {
+            isLoggedIn = true;
+            updateAuthUI(true);
+            return true;
+          } else {
+            localStorage.removeItem('authToken');
+          }
+        } catch (error) {
+          hideLoading();
+          localStorage.removeItem('authToken');
+        }
+      }
+      isLoggedIn = false;
+      updateAuthUI(false);
+      return false;
+    }
+
+    function updateAuthUI(loggedIn) {
+      document.getElementById('loginButton').style.display = loggedIn ? 'none' : 'inline-flex';
+      document.getElementById('logoutButton').style.display = loggedIn ? 'inline-flex' : 'none';
+      document.getElementById('keepalivePanel').style.display = loggedIn ? 'flex' : 'none';
+
+      document.querySelectorAll('.action-buttons').forEach(el => {
+        el.classList.toggle('logged-out', !loggedIn);
+      });
+
+      document.querySelectorAll('.schedule-toggle').forEach(el => {
+        el.style.display = loggedIn ? 'inline-flex' : 'none';
+      });
+    }
+
+    function showLoginModal() {
+      document.getElementById('loginModal').classList.add('active');
       document.getElementById('username').value = '';
       document.getElementById('password').value = '';
       document.getElementById('loginError').style.display = 'none';
       document.getElementById('username').focus();
     }
 
-    function hideLoginForm() {
-      document.getElementById('loginOverlay').style.display = 'none';
+    function hideLoginModal() {
+      document.getElementById('loginModal').classList.remove('active');
     }
 
-    function login() {
+    async function login() {
       const username = document.getElementById('username').value;
       const password = document.getElementById('password').value;
-      const loginError = document.getElementById('loginError');
-      showLoading();
-      fetch('/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password })
-      })
-      .then(response => response.json())
-      .then(data => {
+
+      try {
+        showLoading();
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await response.json();
         hideLoading();
+
         if (data.success) {
-          console.log('登录成功，保存 token');
           localStorage.setItem('authToken', data.token);
           isLoggedIn = true;
-          hideLoginForm();
-          document.getElementById('loginButton').style.display = 'none';
-          document.getElementById('logoutButton').style.display = 'block';
-          updateActionButtons(true);
-          refreshData(); // 登录成功后刷新数据以显示所有实例包括 private
+          hideLoginModal();
+          updateAuthUI(true);
+          loadGlobalKeepAliveConfig();
+          refreshData();
         } else {
-          console.log('登录失败:', data.message);
-          loginError.textContent = data.message || '登录失败';
-          loginError.style.display = 'block';
+          document.getElementById('loginError').textContent = data.message || '登录失败';
+          document.getElementById('loginError').style.display = 'block';
         }
-      })
-      .catch(error => {
+      } catch (error) {
         hideLoading();
-        console.error('登录请求失败:', error);
-        loginError.textContent = '登录请求失败，请稍后重试';
-        loginError.style.display = 'block';
-      });
-    }
-
-    function logout() {
-      const token = localStorage.getItem('authToken');
-      if (token) {
-        showLoading();
-        fetch('/api/logout', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ token })
-        })
-        .then(response => response.json())
-        .then(data => {
-          hideLoading();
-          console.log('登出成功，清除 token');
-          localStorage.removeItem('authToken');
-          isLoggedIn = false;
-          document.getElementById('loginButton').style.display = 'block';
-          document.getElementById('logoutButton').style.display = 'none';
-          updateActionButtons(false);
-          refreshData(); // 登出后刷新数据以隐藏 private 实例
-        })
-        .catch(error => {
-          hideLoading();
-          console.error('登出失败，但仍清除 token:', error);
-          localStorage.removeItem('authToken');
-          isLoggedIn = false;
-          document.getElementById('loginButton').style.display = 'block';
-          document.getElementById('logoutButton').style.display = 'none';
-          updateActionButtons(false);
-          refreshData(); // 登出后刷新数据以隐藏 private 实例
-        });
-      } else {
-        console.log('本地无 token，直接设置为未登录');
-        isLoggedIn = false;
-        document.getElementById('loginButton').style.display = 'block';
-        document.getElementById('logoutButton').style.display = 'none';
-        updateActionButtons(false);
-        refreshData(); // 登出后刷新数据以隐藏 private 实例
+        document.getElementById('loginError').textContent = '登录请求失败';
+        document.getElementById('loginError').style.display = 'block';
       }
     }
 
-    function updateActionButtons(loggedIn) {
-      console.log('更新操作按钮状态，是否已登录:', loggedIn);
-      isLoggedIn = loggedIn;
-      const cards = document.querySelectorAll('.server-card');
-      cards.forEach(card => {
-        const buttons = card.querySelector('.action-buttons');
-        if (buttons) {
-          buttons.style.display = loggedIn ? 'flex' : 'none';
+    async function logout() {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        try {
+          await fetch('/api/logout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token })
+          });
+        } catch (error) {
+          console.error('Logout error:', error);
         }
-        // 动态添加或去除 not-logged-in 类以调整卡片高度
-        if (loggedIn) {
-          card.classList.remove('not-logged-in');
-        } else {
-          card.classList.add('not-logged-in');
-        }
-        // 确保图表切换按钮总是可见，不管是否登录
-        const chartToggleButton = card.querySelector('.chart-toggle-button');
-        if (chartToggleButton) {
-          chartToggleButton.style.display = 'inline-block';
-        }
-      });
+      }
+      localStorage.removeItem('authToken');
+      isLoggedIn = false;
+      updateAuthUI(false);
+      refreshData();
     }
 
-    // 使用 window.onload 确保页面完全加载后检查登录状态
-    window.onload = async function() {
-      console.log('页面加载完成，开始检查登录状态');
-      await checkLoginStatus();
-      console.log('登录状态检查完成，初始化数据');
-      await initialize();
-    };
-
-    // 二次确认弹窗逻辑
+    // Confirm modal
     let pendingAction = null;
     let pendingRepoId = null;
 
-    function showConfirmDialog(action, repoId, title, message) {
+    function showConfirmModal(action, repoId, title, message) {
       pendingAction = action;
       pendingRepoId = repoId;
       document.getElementById('confirmTitle').textContent = title;
       document.getElementById('confirmMessage').textContent = message;
-      document.getElementById('confirmOverlay').style.display = 'flex';
+      document.getElementById('confirmModal').classList.add('active');
     }
 
-    function confirmAction() {
-      if (pendingAction === 'restart') {
-        restartSpace(pendingRepoId);
-      } else if (pendingAction === 'rebuild') {
-        rebuildSpace(pendingRepoId);
-      }
-      cancelAction();
-    }
-
-    function cancelAction() {
+    function hideConfirmModal() {
+      document.getElementById('confirmModal').classList.remove('active');
       pendingAction = null;
       pendingRepoId = null;
-      document.getElementById('confirmOverlay').style.display = 'none';
     }
 
-    async function getUsernames() {
+    async function confirmAction() {
+      if (pendingAction === 'restart') {
+        await restartSpace(pendingRepoId);
+      } else if (pendingAction === 'rebuild') {
+        await rebuildSpace(pendingRepoId);
+      }
+      hideConfirmModal();
+    }
+
+    // Global Keep-Alive
+    async function loadGlobalKeepAliveConfig() {
+      const token = localStorage.getItem('authToken');
+      if (!token) return;
+
+      try {
+        const response = await fetch('/api/keepalive-global', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        document.getElementById('globalKeepAliveToggle').checked = data.enabled;
+        document.getElementById('globalKeepAliveInterval').value = data.intervalMinutes || 30;
+      } catch (error) {
+        console.error('Failed to load global keep-alive config:', error);
+      }
+    }
+
+    function toggleGlobalKeepAlive() {
+      // Just update UI, actual save happens on button click
+    }
+
+    async function saveGlobalKeepAlive() {
+      const token = localStorage.getItem('authToken');
+      if (!token) return;
+
+      const enabled = document.getElementById('globalKeepAliveToggle').checked;
+      const intervalMinutes = parseInt(document.getElementById('globalKeepAliveInterval').value) || 30;
+
       try {
         showLoading();
-        const token = localStorage.getItem('authToken');
-        const headers = {};
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-          console.log('getUsernames 请求中附加 Token:', token.slice(0, 8) + '...');
-        }
-        const response = await fetch('/api/config', { headers });
-        const config = await response.json();
-        hideLoading();
-        const usernamesList = config.usernames ? config.usernames.split(',').map(name => name.trim()).filter(name => name) : [];
-        document.getElementById('totalUsers').textContent = usernamesList.length;
-        // 更新用户过滤下拉菜单
-        const userFilter = document.getElementById('userFilter');
-        userFilter.innerHTML = '<option value="all">全部用户</option>';
-        usernamesList.forEach(username => {
-          const option = document.createElement('option');
-          option.value = username;
-          option.textContent = username;
-          userFilter.appendChild(option);
+        const response = await fetch('/api/keepalive-global', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ enabled, intervalMinutes })
         });
-        return usernamesList;
+        const data = await response.json();
+        hideLoading();
+
+        if (data.success) {
+          alert(data.message);
+        } else {
+          alert('保存失败: ' + (data.error || '未知错误'));
+        }
       } catch (error) {
         hideLoading();
+        alert('保存失败: ' + error.message);
+      }
+    }
+
+    // Data fetching
+    async function getUsernames() {
+      try {
+        const response = await fetch('/api/config');
+        const config = await response.json();
+        const usernames = config.usernames ? config.usernames.split(',').filter(n => n.trim()) : [];
+        document.getElementById('totalUsers').textContent = usernames.length;
+
+        const userFilter = document.getElementById('userFilter');
+        userFilter.innerHTML = '<option value="all">全部用户</option>';
+        usernames.forEach(username => {
+          const option = document.createElement('option');
+          option.value = username.trim();
+          option.textContent = username.trim();
+          userFilter.appendChild(option);
+        });
+
+        return usernames;
+      } catch (error) {
         console.error('Failed to fetch usernames:', error);
-        document.getElementById('totalUsers').textContent = 0;
         return [];
       }
     }
 
     async function fetchInstances() {
+      const token = localStorage.getItem('authToken');
+      const headers = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       try {
         showLoading();
-        const token = localStorage.getItem('authToken');
-        const headers = {};
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-          console.log('fetchInstances 请求中附加 Token:', token.slice(0, 8) + '...');
-        } else {
-          console.log('无可用 Token，未附加 Authorization 头');
-        }
         const response = await fetch('/api/proxy/spaces', { headers });
         const instances = await response.json();
-        console.log('从后端获取的实例列表:', instances);
         hideLoading();
-        if (instances.length === 0) {
-          alert('未获取到实例数据，可能是网络问题或数据暂不可用。');
-        }
         return instances;
       } catch (error) {
         hideLoading();
-        console.error("获取实例列表失败：", error);
-        alert('获取实例列表失败，请稍后重试。');
+        console.error('Failed to fetch instances:', error);
         return [];
       }
     }
 
+    // Metrics Stream
     class MetricsStreamManager {
       constructor() {
         this.eventSource = null;
@@ -1094,87 +1293,43 @@
         }
 
         const instancesParam = subscribedInstances.join(',');
-        const token = localStorage.getItem('authToken');
-        // 由于 EventSource 不支持直接设置 Authorization 头，这里通过查询参数传递 token
-        const url = `/api/proxy/live-metrics-stream?instances=${encodeURIComponent(instancesParam)}&token=${encodeURIComponent(token || '')}`;
-        console.log('SSE 连接 URL:', url.split('&token=')[0] + (token ? '&token=... (隐藏)' : '&token=空'));
+        const token = localStorage.getItem('authToken') || '';
+        const url = `/api/proxy/live-metrics-stream?instances=${encodeURIComponent(instancesParam)}&token=${encodeURIComponent(token)}`;
+
         this.eventSource = new EventSource(url);
 
-        this.eventSource.addEventListener("metric", (event) => {
+        this.eventSource.addEventListener('metric', (event) => {
           try {
             const data = JSON.parse(event.data);
-            const { repoId, metrics } = data;
-            updateServerCard(metrics, repoId);
+            updateServerCard(data.metrics, data.repoId);
           } catch (error) {
-            console.error(`解析监控数据失败:`, error);
+            console.error('Failed to parse metrics:', error);
           }
         });
 
-        this.eventSource.onerror = (error) => {
-          console.error(`SSE 连接错误:`, error);
+        this.eventSource.onerror = () => {
           this.eventSource.close();
           this.eventSource = null;
-          // 可选：尝试重新连接
           setTimeout(() => this.connect(subscribedInstances), 5000);
         };
-
-        console.log(`SSE 连接已建立，订阅实例: ${instancesParam || '无'}`);
       }
 
       disconnect() {
         if (this.eventSource) {
           this.eventSource.close();
           this.eventSource = null;
-          console.log(`SSE 连接已断开`);
         }
       }
     }
 
     const metricsStreamManager = new MetricsStreamManager();
-    const instanceMap = new Map();
-    const serverStatus = new Map();
-    let allInstances = []; // 存储所有实例数据，用于过滤和排序
-    const chartInstances = new Map(); // 存储每个实例的图表实例
-    const chartDataBuffer = new Map(); // 存储图表数据缓冲以减少更新频率
 
-    async function initialize() {
-      await getUsernames();
-      const instances = await fetchInstances();
-      allInstances = instances;
-      renderInstances(allInstances);
-      
-      // 默认只监控状态为 running 的实例
-      const runningInstances = instances
-        .filter(instance => instance.status.toLowerCase() === 'running')
-        .map(instance => instance.repo_id);
-      
-      metricsStreamManager.connect(runningInstances);
-      
-      updateSummary();
-      updateActionButtons(isLoggedIn);
-    }
-
-    // 手动刷新数据函数
-    async function refreshData() {
-      metricsStreamManager.disconnect();
-      // 销毁所有图表实例
-      chartInstances.forEach(chart => {
-        if (chart) {
-          chart.destroy();
-        }
-      });
-      chartInstances.clear();
-      chartDataBuffer.clear();
-      await initialize();
-      applyFiltersAndSort(); // 确保刷新后重新应用过滤和排序
-    }
-
+    // Render functions
     function renderInstances(instances) {
-      const serversContainer = document.getElementById('servers');
-      serversContainer.innerHTML = ''; // 清空现有内容
-      const userGroups = {};
+      const container = document.getElementById('servers');
+      container.innerHTML = '';
 
-      // 按用户分组
+      const userGroups = {};
       instances.forEach(instance => {
         if (!userGroups[instance.owner]) {
           userGroups[instance.owner] = [];
@@ -1182,490 +1337,351 @@
         userGroups[instance.owner].push(instance);
       });
 
-      // 渲染每个用户组
       Object.keys(userGroups).forEach(owner => {
-        let userGroup = document.createElement('details');
-        userGroup.className = 'user-group';
-        userGroup.id = `user-${owner}`;
-        userGroup.setAttribute('open', '');
-        
-        const summary = document.createElement('summary');
-        summary.textContent = `用户: ${owner}`;
-        userGroup.appendChild(summary);
-        
-        const userServers = document.createElement('div');
-        userServers.className = 'user-servers';
-        userGroup.appendChild(userServers);
-        
-        serversContainer.appendChild(userGroup);
+        const group = document.createElement('details');
+        group.className = 'user-group';
+        group.open = true;
 
-        // 渲染该用户下的实例
+        const summary = document.createElement('summary');
+        summary.textContent = owner;
+        group.appendChild(summary);
+
+        const serversDiv = document.createElement('div');
+        serversDiv.className = 'user-servers';
+        group.appendChild(serversDiv);
+
+        container.appendChild(group);
+
         userGroups[owner].forEach(instance => {
-          renderInstanceCard(instance, userServers);
+          renderInstanceCard(instance, serversDiv);
         });
       });
     }
 
-    // 图表配置函数
+    function renderInstanceCard(instance, container) {
+      const card = document.createElement('div');
+      card.className = 'instance-card';
+      card.id = `instance-${instance.repo_id}`;
+
+      instanceMap.set(instance.repo_id, instance);
+
+      const statusClass = instance.status.toLowerCase();
+      const statusText = statusClass === 'running' ? '运行中' : statusClass === 'sleeping' ? '休眠中' : '已停止';
+      const lastModified = formatRelativeTime(instance.last_modified);
+
+      card.innerHTML = `
+        <div class="instance-header">
+          <div class="instance-name" onclick="toggleInfo('${instance.repo_id}')">
+            <div class="status-badge ${statusClass}">
+              <span class="status-dot"></span>
+              ${statusText}
+            </div>
+            <h3 title="${instance.name}">${instance.name}</h3>
+            ${instance.private ? '<span class="private-badge">私有</span>' : ''}
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn btn-sm btn-ghost schedule-toggle" style="display: ${isLoggedIn ? 'inline-flex' : 'none'};" onclick="toggleSchedule('${instance.repo_id}')" title="定时设置">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 6v6l4 2"/>
+              </svg>
+            </button>
+            <button class="btn btn-sm btn-ghost" onclick="toggleChart('${instance.repo_id}')" title="查看图表">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3v18h18"/>
+                <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric-item">
+            <div class="metric-label">CPU</div>
+            <div class="metric-value cpu-usage">N/A</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">内存</div>
+            <div class="metric-value memory-usage">N/A</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">上传</div>
+            <div class="metric-value upload">N/A</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">下载</div>
+            <div class="metric-value download">N/A</div>
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="info-item">
+            <div class="info-label">描述</div>
+            <div class="info-value">${instance.short_description || 'N/A'}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">最后更新</div>
+            <div class="info-value">${lastModified}</div>
+          </div>
+        </div>
+        <div class="schedule-panel" id="schedule-${instance.repo_id}">
+          <div class="schedule-section">
+            <span class="schedule-label">定时重启</span>
+            <div class="schedule-controls">
+              <label class="toggle-switch">
+                <input type="checkbox" id="restart-toggle-${instance.repo_id}">
+                <span class="toggle-slider"></span>
+              </label>
+              <span style="font-size: 13px; color: var(--text-secondary);">每</span>
+              <input type="number" class="schedule-input" id="restart-interval-${instance.repo_id}" value="24" min="1" max="720">
+              <span class="schedule-unit">小时</span>
+              <button class="btn btn-sm btn-secondary" onclick="saveScheduledRestart('${instance.repo_id}')">保存</button>
+            </div>
+          </div>
+          <div class="schedule-section">
+            <span class="schedule-label">保活 Ping</span>
+            <div class="schedule-controls">
+              <label class="toggle-switch">
+                <input type="checkbox" id="keepalive-toggle-${instance.repo_id}">
+                <span class="toggle-slider"></span>
+              </label>
+              <span style="font-size: 13px; color: var(--text-secondary);">每</span>
+              <input type="number" class="schedule-input" id="keepalive-interval-${instance.repo_id}" value="30" min="1" max="1440">
+              <span class="schedule-unit">分钟</span>
+              <button class="btn btn-sm btn-secondary" onclick="saveKeepAlive('${instance.repo_id}')">保存</button>
+            </div>
+          </div>
+        </div>
+        <div class="action-buttons ${isLoggedIn ? '' : 'logged-out'}">
+          <button class="btn btn-sm btn-secondary" onclick="viewInstance('${instance.url}')">查看</button>
+          <button class="btn btn-sm btn-secondary" onclick="manageInstance('${instance.repo_id}')">管理</button>
+          <button class="btn btn-sm btn-secondary" onclick="showConfirmModal('restart', '${instance.repo_id}', '确认重启', '确定要重启实例 ${instance.name} 吗？')">重启</button>
+          <button class="btn btn-sm btn-danger" onclick="showConfirmModal('rebuild', '${instance.repo_id}', '确认重建', '确定要重建实例 ${instance.name} 吗？此操作将清除所有数据。')">重建</button>
+        </div>
+        <div class="chart-container">
+          <canvas id="chart-${instance.repo_id}"></canvas>
+        </div>
+      `;
+
+      container.appendChild(card);
+
+      serverStatus.set(instance.repo_id, {
+        lastSeen: Date.now(),
+        isOnline: statusClass === 'running',
+        isSleep: statusClass === 'sleeping',
+        data: null,
+        status: instance.status
+      });
+
+      // Load schedule configs if logged in
+      if (isLoggedIn) {
+        loadScheduleConfig(instance.repo_id);
+      }
+    }
+
+    // Toggle functions
+    function toggleInfo(repoId) {
+      const card = document.getElementById(`instance-${repoId}`);
+      if (card) card.classList.toggle('info-expanded');
+    }
+
+    function toggleSchedule(repoId) {
+      const card = document.getElementById(`instance-${repoId}`);
+      if (card) card.classList.toggle('schedule-expanded');
+    }
+
+    function toggleChart(repoId) {
+      const card = document.getElementById(`instance-${repoId}`);
+      if (card) {
+        const wasExpanded = card.classList.contains('chart-expanded');
+        card.classList.toggle('chart-expanded');
+        if (!wasExpanded && !chartInstances.has(repoId)) {
+          createChart(repoId);
+        }
+      }
+    }
+
+    // Schedule management
+    async function loadScheduleConfig(repoId) {
+      const token = localStorage.getItem('authToken');
+      if (!token) return;
+
+      try {
+        // Load restart config
+        const restartRes = await fetch(`/api/schedule/restart/${encodeURIComponent(repoId)}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const restartData = await restartRes.json();
+        const restartToggle = document.getElementById(`restart-toggle-${repoId}`);
+        const restartInterval = document.getElementById(`restart-interval-${repoId}`);
+        if (restartToggle) restartToggle.checked = restartData.enabled;
+        if (restartInterval && restartData.intervalHours) restartInterval.value = restartData.intervalHours;
+
+        // Load keep-alive config
+        const keepaliveRes = await fetch(`/api/keepalive/${encodeURIComponent(repoId)}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const keepaliveData = await keepaliveRes.json();
+        const keepaliveToggle = document.getElementById(`keepalive-toggle-${repoId}`);
+        const keepaliveInterval = document.getElementById(`keepalive-interval-${repoId}`);
+        if (keepaliveToggle) keepaliveToggle.checked = keepaliveData.enabled;
+        if (keepaliveInterval && keepaliveData.intervalMinutes) keepaliveInterval.value = keepaliveData.intervalMinutes;
+      } catch (error) {
+        console.error('Failed to load schedule config:', error);
+      }
+    }
+
+    async function saveScheduledRestart(repoId) {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        alert('请先登录');
+        return;
+      }
+
+      const enabled = document.getElementById(`restart-toggle-${repoId}`).checked;
+      const intervalHours = parseInt(document.getElementById(`restart-interval-${repoId}`).value) || 24;
+
+      try {
+        showLoading();
+        const response = await fetch(`/api/schedule/restart/${encodeURIComponent(repoId)}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ enabled, intervalHours })
+        });
+        const data = await response.json();
+        hideLoading();
+        alert(data.success ? data.message : '保存失败: ' + data.error);
+      } catch (error) {
+        hideLoading();
+        alert('保存失败: ' + error.message);
+      }
+    }
+
+    async function saveKeepAlive(repoId) {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        alert('请先登录');
+        return;
+      }
+
+      const enabled = document.getElementById(`keepalive-toggle-${repoId}`).checked;
+      const intervalMinutes = parseInt(document.getElementById(`keepalive-interval-${repoId}`).value) || 30;
+
+      try {
+        showLoading();
+        const response = await fetch(`/api/keepalive/${encodeURIComponent(repoId)}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ enabled, intervalMinutes })
+        });
+        const data = await response.json();
+        hideLoading();
+        alert(data.success ? data.message : '保存失败: ' + data.error);
+      } catch (error) {
+        hideLoading();
+        alert('保存失败: ' + error.message);
+      }
+    }
+
+    // Chart functions
     function createChart(instanceId) {
-      const canvasId = `chart-${instanceId}`;
-      const canvas = document.getElementById(canvasId);
+      const canvas = document.getElementById(`chart-${instanceId}`);
       if (!canvas) return null;
 
-      const gridColor = 'rgba(0, 212, 255, 0.1)';
-      const textColor = '#E0E0FF';
-      const cpuColor = '#00FFAA';
-      const memoryColor = '#00D4FF';
-      const uploadColor = '#FF9500';
-      const downloadColor = '#FF00FF';
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+      const textColor = isDark ? '#94a3b8' : '#64748b';
 
-      const ctx = canvas.getContext('2d');
-      const chart = new Chart(ctx, {
+      const chart = new Chart(canvas.getContext('2d'), {
         type: 'line',
         data: {
-          labels: Array(30).fill(''), // 初始为空标签，最多30个数据点
+          labels: Array(30).fill(''),
           datasets: [
-            {
-              label: 'CPU 使用率 (%)',
-              data: [],
-              borderColor: cpuColor,
-              backgroundColor: 'rgba(0, 255, 170, 0.2)',
-              tension: 0.4,
-              fill: true,
-            },
-            {
-              label: '内存使用率 (%)',
-              data: [],
-              borderColor: memoryColor,
-              backgroundColor: 'rgba(0, 212, 255, 0.2)',
-              tension: 0.4,
-              fill: true,
-            },
-            {
-              label: '上传速度 (KB/s)',
-              data: [],
-              borderColor: uploadColor,
-              backgroundColor: 'rgba(255, 149, 0, 0.2)',
-              tension: 0.4,
-              fill: true,
-            },
-            {
-              label: '下载速度 (KB/s)',
-              data: [],
-              borderColor: downloadColor,
-              backgroundColor: 'rgba(255, 0, 255, 0.2)',
-              tension: 0.4,
-              fill: true,
-            },
+            { label: 'CPU (%)', data: [], borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', tension: 0.4, fill: true },
+            { label: '内存 (%)', data: [], borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.1)', tension: 0.4, fill: true },
+            { label: '上传 (KB/s)', data: [], borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', tension: 0.4, fill: true },
+            { label: '下载 (KB/s)', data: [], borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', tension: 0.4, fill: true }
           ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: {
-              labels: {
-                color: textColor,
-                font: { size: 12, family: "'Orbitron', sans-serif" }
-              }
-            },
-            tooltip: {
-              mode: 'index',
-              intersect: false,
-              backgroundColor: 'rgba(20, 20, 40, 0.9)',
-              titleColor: textColor,
-              bodyColor: textColor,
-              padding: 12,
-              boxPadding: 8,
-              borderRadius: 6,
-              borderWidth: 1,
-              borderColor: 'rgba(0, 212, 255, 0.3)'
-            }
+            legend: { labels: { color: textColor, font: { size: 11 } } }
           },
           scales: {
-            y: {
-              beginAtZero: true,
-              grid: { color: gridColor, drawTicks: false },
-              ticks: {
-                color: textColor,
-                font: { size: 11, family: "'Orbitron', sans-serif" }
-              }
-            },
-            x: {
-              grid: { color: gridColor, drawTicks: false },
-              ticks: {
-                color: textColor,
-                font: { size: 11, family: "'Orbitron', sans-serif" },
-                maxRotation: 0,
-                minRotation: 0,
-                autoSkip: true,
-                autoSkipPadding: 10
-              }
-            }
+            y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } },
+            x: { grid: { color: gridColor }, ticks: { display: false } }
           },
-          elements: {
-            point: {
-              radius: 0, // 隐藏数据点
-              hitRadius: 5 // 确保悬停仍有效
-            },
-            line: {
-              borderWidth: 2
-            }
-          },
-          animation: false // 禁用图表动画，减少性能开销
+          elements: { point: { radius: 0 }, line: { borderWidth: 2 } },
+          animation: false
         }
       });
+
       chartInstances.set(instanceId, chart);
       return chart;
     }
 
-    // 更新图表数据，带有缓冲机制减少更新频率
     function updateChart(instanceId, data) {
-      let buffer = chartDataBuffer.get(instanceId) || { data: [], count: 0 };
-      buffer.data.push(data);
+      let buffer = chartDataBuffer.get(instanceId) || { count: 0 };
       buffer.count++;
-
-      if (buffer.count < 2) { // 每 2 次数据更新才渲染一次
+      if (buffer.count < 2) {
         chartDataBuffer.set(instanceId, buffer);
         return;
       }
 
       let chart = chartInstances.get(instanceId);
-      if (!chart) {
-        chart = createChart(instanceId);
-        if (!chart) return;
-      }
+      if (!chart) return;
 
-      // 获取当前数据集
-      const cpuData = chart.data.datasets[0].data;
-      const memoryData = chart.data.datasets[1].data;
-      const uploadData = chart.data.datasets[2].data;
-      const downloadData = chart.data.datasets[3].data;
+      const datasets = chart.data.datasets;
+      datasets[0].data.push(data.cpu_usage_pct);
+      datasets[1].data.push(((data.memory_used_bytes / data.memory_total_bytes) * 100).toFixed(2));
+      datasets[2].data.push((data.tx_bps / 1024).toFixed(2));
+      datasets[3].data.push((data.rx_bps / 1024).toFixed(2));
 
-      // 追加最新数据
-      const latestData = buffer.data[buffer.data.length - 1];
-      cpuData.push(latestData.cpu_usage_pct);
-      memoryData.push(((latestData.memory_used_bytes / latestData.memory_total_bytes) * 100).toFixed(2));
-      uploadData.push((latestData.tx_bps / 1024).toFixed(2)); // 转换为 KB/s
-      downloadData.push((latestData.rx_bps / 1024).toFixed(2)); // 转换为 KB/s
+      datasets.forEach(ds => { if (ds.data.length > 30) ds.data.shift(); });
 
-      // 限制数据点数量为 30 个
-      if (cpuData.length > 30) {
-        cpuData.shift();
-        memoryData.shift();
-        uploadData.shift();
-        downloadData.shift();
-      }
-
-      // 更新图表
       chart.update();
-      
-      // 清空缓冲
-      chartDataBuffer.set(instanceId, { data: [], count: 0 });
+      chartDataBuffer.set(instanceId, { count: 0 });
     }
 
-    // 计算相对时间的辅助函数
-    function formatRelativeTime(dateStr) {
-      if (!dateStr) return '未知时间';
-      try {
-        const date = new Date(dateStr);
-        const now = new Date();
-        const diffMs = now - date;
-        const diffSecs = Math.floor(diffMs / 1000);
-        const diffMins = Math.floor(diffSecs / 60);
-        const diffHrs = Math.floor(diffMins / 60);
-        const diffDays = Math.floor(diffHrs / 24);
-
-        if (diffDays > 7) {
-          return date.toLocaleDateString(); // 超过7天显示日期
-        } else if (diffDays > 0) {
-          return `${diffDays}天前`;
-        } else if (diffHrs > 0) {
-          return `${diffHrs}小时前`;
-        } else if (diffMins > 0) {
-          return `${diffMins}分钟前`;
-        } else {
-          return '刚刚';
-        }
-      } catch (error) {
-        console.error('时间格式化失败:', error);
-        return '未知时间';
-      }
-    }
-
-    // 切换信息块显示/隐藏的函数
-    function toggleInfoBlock(instanceId) {
+    // Update functions
+    function updateServerCard(data, instanceId) {
       const card = document.getElementById(`instance-${instanceId}`);
       if (!card) return;
 
-      card.classList.toggle('info-expanded');
-    }
-
-    function renderInstanceCard(instance, container) {
-      const instanceId = instance.repo_id;
-      instanceMap.set(instanceId, instance);
-
-      const cardId = `instance-${instanceId}`;
-      let card = document.getElementById(cardId);
-      if (!card) {
-        card = document.createElement('div');
-        card.id = cardId;
-        card.className = 'server-card';
-        if (!isLoggedIn) {
-          card.classList.add('not-logged-in'); // 未登录时添加类以调整高度
-        }
-        // 根据 instance.private 属性选择不同的图标
-        const iconSvg = instance.private 
-          ? `<svg class="server-flag" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M18 8v-3c0-1.656-1.344-3-3-3h-6c-1.656 0-3 1.344-3 3v3h-3v14h18v-14h-3zm-10-1.5c0-.828.672-1.5 1.5-1.5h5c.828 0 1.5.672 1.5 1.5v2.5h-8v-2.5zm4 11.5c-1.105 0-2-.895-2-2s.895-2 2-2 2 .895 2 2-.895 2-2 2z"/>
-            </svg>` // 锁图标，表示 private 实例
-          : `<svg class="server-flag" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-               <path d="M21 3H3C1.9 3 1 3.9 1 5v3c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 5H4V6h16v2zm1 4H3c-1.1 0-2 .9-2 2v3c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2v-3c0-1.1-.9-2-2-2zm-1 5H4v-2h16v2zm1 4H3c-1.1 0-2 .9-2 2v3c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2v-3c0-1.1-.9-2-2-2zm-1 5H4v-2h16v2z"/>
-            </svg>`; // 服务器图标，表示非 private 实例
-        
-        // 处理 short_description，默认值“暂无描述”
-        const description = instance.short_description && instance.short_description.trim() ? instance.short_description : 'N/A';
-        // 处理 last_modified，格式化为相对时间
-        const lastModified = formatRelativeTime(instance.last_modified);
-
-        card.innerHTML = `
-          <div class="server-header">
-            <div class="server-name" onclick="toggleInfoBlock('${instanceId}')">
-              <div class="status-dot status-sleep"></div>
-              ${iconSvg}
-              <div>${instance.name}</div>
-            </div>
-            <div>
-              <button class="chart-toggle-button" onclick="toggleChart('${instanceId}')">查看图表</button>
-            </div>
-          </div>
-          <div class="metric-grid">
-            <div class="metric-item">
-              <div class="metric-label">状态</div>
-              <div class="metric-value status">${instance.status}</div>
-            </div>
-            <div class="metric-item">
-              <div class="metric-label">CPU</div>
-              <div class="metric-value cpu-usage">N/A</div>
-            </div>
-            <div class="metric-item">
-              <div class="metric-label">内存</div>
-              <div class="metric-value memory-usage">N/A</div>
-            </div>
-            <div class="metric-item">
-              <div class="metric-label">上传</div>
-              <div class="metric-value upload">N/A</div>
-            </div>
-            <div class="metric-item">
-              <div class="metric-label">下载</div>
-              <div class="metric-value download">N/A</div>
-            </div>
-          </div>
-          <div class="info-block">
-            <div class="info-item">
-              <div class="info-label">描述</div>
-              <div class="info-value" title="${description}">${description}</div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">最近更新</div>
-              <div class="info-value">${lastModified}</div>
-            </div>
-          </div>
-          <div class="action-buttons" style="display: ${isLoggedIn ? 'flex' : 'none'};">
-            <button class="action-button view-button" onclick="viewInstance('${instance.url}')">查看</button>
-            <button class="action-button" onclick="manageInstance('${instance.repo_id}')">管理</button>
-            <button class="action-button" onclick="showConfirmDialog('restart', '${instance.repo_id}', '确认重启', '您确定要重启实例 ${instance.name} (${instance.repo_id}) 吗？')">重启</button>
-            <button class="action-button" onclick="showConfirmDialog('rebuild', '${instance.repo_id}', '确认重建', '您确定要重建实例 ${instance.name} (${instance.repo_id}) 吗？')">重建</button>
-          </div>
-          <div class="chart-container" id="chart-container-${instanceId}">
-            <canvas id="chart-${instanceId}"></canvas>
-          </div>
-        `;
-        container.appendChild(card);
-      }
-      const statusDot = card.querySelector('.status-dot');
-      const initialStatus = instance.status.toLowerCase();
-      if (initialStatus === 'running') {
-        statusDot.className = 'status-dot status-online';
-      } else if (initialStatus === 'sleeping') {
-        statusDot.className = 'status-dot status-sleep';
-      } else {
-        statusDot.className = 'status-dot status-offline';
-      }
-      serverStatus.set(instanceId, { lastSeen: Date.now(), isOnline: initialStatus === 'running', isSleep: initialStatus === 'sleeping', data: null, status: instance.status });
-    }
-
-    // 切换图表显示/隐藏
-    function toggleChart(instanceId) {
-      const card = document.getElementById(`instance-${instanceId}`);
-      const chartContainer = document.getElementById(`chart-container-${instanceId}`);
-      const toggleButton = card.querySelector('.chart-toggle-button');
-      if (!card || !chartContainer) return;
-
-      if (card.classList.contains('expanded')) {
-        card.classList.remove('expanded');
-        toggleButton.textContent = '查看图表';
-      } else {
-        card.classList.add('expanded');
-        toggleButton.textContent = '收起图表';
-        // 如果图表未初始化，则创建
-        if (!chartInstances.has(instanceId)) {
-          createChart(instanceId);
-        }
-      }
-    }
-
-    function updateServerCard(data, instanceId, isSleep = false) {
-      const cardId = `instance-${instanceId}`;
-      let card = document.getElementById(cardId);
       const instance = instanceMap.get(instanceId);
-      
-      if (!card && instance) {
-        // 如果卡片不存在，但实例存在，说明可能被过滤掉了，不渲染
-        return;
+
+      if (data) {
+        card.querySelector('.cpu-usage').textContent = `${data.cpu_usage_pct}%`;
+        card.querySelector('.memory-usage').textContent = `${((data.memory_used_bytes / data.memory_total_bytes) * 100).toFixed(1)}%`;
+        card.querySelector('.upload').textContent = `${formatBytes(data.tx_bps)}/s`;
+        card.querySelector('.download').textContent = `${formatBytes(data.rx_bps)}/s`;
+
+        const badge = card.querySelector('.status-badge');
+        badge.className = 'status-badge running';
+        badge.innerHTML = '<span class="status-dot"></span>运行中';
+
+        serverStatus.set(instanceId, { lastSeen: Date.now(), isOnline: true, isSleep: false, data, status: 'running' });
+        updateChart(instanceId, data);
       }
 
-      if (card) {
-        const statusDot = card.querySelector('.status-dot');
-        let upload = 'N/A', download = 'N/A', cpuUsage = 'N/A', memoryUsage = 'N/A';
-        let isOnline = false;
-
-        if (data) {
-          cpuUsage = `${data.cpu_usage_pct}%`;
-          memoryUsage = `${((data.memory_used_bytes / data.memory_total_bytes) * 100).toFixed(2)}%`;
-          upload = `${formatBytes(data.tx_bps)}/s`;
-          download = `${formatBytes(data.rx_bps)}/s`;
-          statusDot.className = 'status-dot status-online';
-          isOnline = true;
-          isSleep = false;
-          // 更新图表数据
-          updateChart(instanceId, data);
-        } else {
-          const currentStatus = instance?.status.toLowerCase() || 'unknown';
-          if (currentStatus === 'running') {
-            statusDot.className = 'status-dot status-online';
-            isOnline = true;
-            isSleep = false;
-          } else if (currentStatus === 'sleeping') {
-            statusDot.className = 'status-dot status-sleep';
-            isOnline = false;
-            isSleep = true;
-          } else {
-            statusDot.className = 'status-dot status-offline';
-            isOnline = false;
-            isSleep = false;
-          }
-        }
-
-        card.querySelector('.cpu-usage').textContent = cpuUsage;
-        card.querySelector('.memory-usage').textContent = memoryUsage;
-        card.querySelector('.upload').textContent = upload;
-        card.querySelector('.download').textContent = download;
-
-        serverStatus.set(instanceId, { lastSeen: Date.now(), isOnline, isSleep, data: data || null, status: instance?.status || 'unknown' });
-        updateSummary();
-      }
-    }
-
-    async function restartSpace(repoId) {
-      try {
-        const token = localStorage.getItem('authToken');
-        if (!token || !isLoggedIn) {
-          alert('请先登录以执行此操作');
-          showLoginForm();
-          return;
-        }
-        showLoading();
-        const encodedRepoId = encodeURIComponent(repoId);
-        const response = await fetch(`/api/proxy/restart/${encodedRepoId}`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const result = await response.json();
-        hideLoading();
-        if (result.success) {
-          alert(`重启成功: ${repoId}`);
-          // 操作成功后立即刷新数据
-          refreshData();
-        } else {
-          if (response.status === 401) {
-            alert('登录已过期，请重新登录');
-            localStorage.removeItem('authToken');
-            isLoggedIn = false;
-            document.getElementById('loginButton').style.display = 'block';
-            document.getElementById('logoutButton').style.display = 'none';
-            updateActionButtons(false);
-            showLoginForm();
-          } else {
-            alert(`重启失败: ${result.error || '未知错误'}`);
-            console.error(`重启失败 (${repoId}):`, result.error, result.details);
-          }
-        }
-      } catch (error) {
-        hideLoading();
-        console.error(`重启失败 (${repoId}):`, error);
-        alert(`重启失败: ${error.message}`);
-      }
-    }
-
-    async function rebuildSpace(repoId) {
-      try {
-        const token = localStorage.getItem('authToken');
-        if (!token || !isLoggedIn) {
-          alert('请先登录以执行此操作');
-          showLoginForm();
-          return;
-        }
-        showLoading();
-        const encodedRepoId = encodeURIComponent(repoId);
-        const response = await fetch(`/api/proxy/rebuild/${encodedRepoId}`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const result = await response.json();
-        hideLoading();
-        if (result.success) {
-          alert(`重建成功: ${repoId}`);
-          // 操作成功后立即刷新数据
-          refreshData();
-        } else {
-          if (response.status === 401) {
-            alert('登录已过期，请重新登录');
-            localStorage.removeItem('authToken');
-            isLoggedIn = false;
-            document.getElementById('loginButton').style.display = 'block';
-            document.getElementById('logoutButton').style.display = 'none';
-            updateActionButtons(false);
-            showLoginForm();
-          } else {
-            alert(`重建失败: ${result.error || '未知错误'}`);
-            console.error(`重建失败 (${repoId}):`, result.error, result.details);
-          }
-        }
-      } catch (error) {
-        hideLoading();
-        console.error(`重建失败 (${repoId}):`, error);
-        alert(`重建失败: ${error.message}`);
-      }
+      updateSummary();
     }
 
     function updateSummary() {
-      let online = 0;
-      let offline = 0;
-      let totalUpload = 0;
-      let totalDownload = 0;
+      let online = 0, offline = 0, totalUpload = 0, totalDownload = 0;
 
-      serverStatus.forEach((status, instanceId) => {
-        const isRecentlyOnline = status.isOnline || status.status.toLowerCase() === 'running';
-        if (isRecentlyOnline) {
+      serverStatus.forEach((status) => {
+        if (status.isOnline || status.status.toLowerCase() === 'running') {
           online++;
           if (status.data) {
-            totalUpload += parseFloat(status.data.tx_bps) || 0;
-            totalDownload += parseFloat(status.data.rx_bps) || 0;
+            totalUpload += status.data.tx_bps || 0;
+            totalDownload += status.data.rx_bps || 0;
           }
         } else {
           offline++;
@@ -1679,86 +1695,175 @@
       document.getElementById('totalDownload').textContent = `${formatBytes(totalDownload)}/s`;
     }
 
-    function formatBytes(bytes) {
-      if (bytes === 0) return '0 B';
-      const k = 1024;
-      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-
-    setInterval(updateSummary, 5000);
-
-    setInterval(async () => {
-      metricsStreamManager.disconnect();
-      await initialize();
-    }, 300000);
-
-    // 应用过滤和排序
+    // Filter and sort
     function applyFiltersAndSort() {
       const statusFilter = document.getElementById('statusFilter').value;
       const userFilter = document.getElementById('userFilter').value;
       const sortBy = document.getElementById('sortBy').value;
 
-      // 过滤实例
-      let filteredInstances = allInstances;
+      let filtered = [...allInstances];
+
       if (statusFilter !== 'all') {
-        filteredInstances = filteredInstances.filter(instance => instance.status.toLowerCase() === statusFilter);
+        filtered = filtered.filter(i => i.status.toLowerCase() === statusFilter);
       }
       if (userFilter !== 'all') {
-        filteredInstances = filteredInstances.filter(instance => instance.owner === userFilter);
+        filtered = filtered.filter(i => i.owner === userFilter);
       }
 
-      // 排序实例
-      filteredInstances.sort((a, b) => {
-        if (sortBy === 'name-asc') {
-          return a.name.localeCompare(b.name);
-        } else if (sortBy === 'name-desc') {
-          return b.name.localeCompare(a.name);
-        } else if (sortBy === 'status-asc') {
-          const statusOrder = { 'running': 0, 'sleeping': 1, 'stopped': 2 };
-          return statusOrder[a.status.toLowerCase()] - statusOrder[b.status.toLowerCase()];
-        } else if (sortBy === 'status-desc') {
-          const statusOrder = { 'running': 2, 'sleeping': 1, 'stopped': 0 };
-          return statusOrder[a.status.toLowerCase()] - statusOrder[b.status.toLowerCase()];
-        }
+      filtered.sort((a, b) => {
+        const statusOrder = { running: 0, sleeping: 1, stopped: 2 };
+        if (sortBy === 'name-asc') return a.name.localeCompare(b.name);
+        if (sortBy === 'name-desc') return b.name.localeCompare(a.name);
+        if (sortBy === 'status-asc') return (statusOrder[a.status.toLowerCase()] || 2) - (statusOrder[b.status.toLowerCase()] || 2);
+        if (sortBy === 'status-desc') return (statusOrder[b.status.toLowerCase()] || 0) - (statusOrder[a.status.toLowerCase()] || 0);
         return 0;
       });
 
-      // 重新渲染过滤和排序后的实例
       instanceMap.clear();
       serverStatus.clear();
-      metricsStreamManager.disconnect();
-      // 销毁现有图表实例
-      chartInstances.forEach(chart => {
-        if (chart) {
-          chart.destroy();
-        }
-      });
+      chartInstances.forEach(c => c && c.destroy());
       chartInstances.clear();
       chartDataBuffer.clear();
-      renderInstances(filteredInstances);
-      
-      // 默认监控状态为 running 的实例
-      const runningInstances = filteredInstances
-        .filter(instance => instance.status.toLowerCase() === 'running')
-        .map(instance => instance.repo_id);
+
+      renderInstances(filtered);
+
+      const runningInstances = filtered.filter(i => i.status.toLowerCase() === 'running').map(i => i.repo_id);
+      metricsStreamManager.disconnect();
       metricsStreamManager.connect(runningInstances);
-      
+
       updateSummary();
-      updateActionButtons(isLoggedIn);
     }
 
-    // 新增函数：在新标签页中打开实例的URL
+    // Actions
+    async function restartSpace(repoId) {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        alert('请先登录');
+        return;
+      }
+
+      try {
+        showLoading();
+        const response = await fetch(`/api/proxy/restart/${encodeURIComponent(repoId)}`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        hideLoading();
+
+        if (data.success) {
+          alert('重启成功');
+          refreshData();
+        } else {
+          alert('重启失败: ' + (data.error || '未知错误'));
+        }
+      } catch (error) {
+        hideLoading();
+        alert('重启失败: ' + error.message);
+      }
+    }
+
+    async function rebuildSpace(repoId) {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        alert('请先登录');
+        return;
+      }
+
+      try {
+        showLoading();
+        const response = await fetch(`/api/proxy/rebuild/${encodeURIComponent(repoId)}`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        hideLoading();
+
+        if (data.success) {
+          alert('重建成功');
+          refreshData();
+        } else {
+          alert('重建失败: ' + (data.error || '未知错误'));
+        }
+      } catch (error) {
+        hideLoading();
+        alert('重建失败: ' + error.message);
+      }
+    }
+
     function viewInstance(url) {
       window.open(url, '_blank');
     }
 
-    // 新增函数：在新标签页中打开实例的管理页面
     function manageInstance(repoId) {
-      const manageUrl = `https://huggingface.co/spaces/${repoId}`;
-      window.open(manageUrl, '_blank');
+      window.open(`https://huggingface.co/spaces/${repoId}`, '_blank');
     }
+
+    // Utilities
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function formatRelativeTime(dateStr) {
+      if (!dateStr) return '未知';
+      try {
+        const date = new Date(dateStr);
+        const diff = Date.now() - date.getTime();
+        const mins = Math.floor(diff / 60000);
+        const hrs = Math.floor(mins / 60);
+        const days = Math.floor(hrs / 24);
+
+        if (days > 7) return date.toLocaleDateString();
+        if (days > 0) return `${days}天前`;
+        if (hrs > 0) return `${hrs}小时前`;
+        if (mins > 0) return `${mins}分钟前`;
+        return '刚刚';
+      } catch {
+        return '未知';
+      }
+    }
+
+    // Initialize
+    async function initialize() {
+      await getUsernames();
+      const instances = await fetchInstances();
+      allInstances = instances;
+      renderInstances(allInstances);
+
+      const runningInstances = instances.filter(i => i.status.toLowerCase() === 'running').map(i => i.repo_id);
+      metricsStreamManager.connect(runningInstances);
+
+      updateSummary();
+      updateAuthUI(isLoggedIn);
+
+      if (isLoggedIn) {
+        loadGlobalKeepAliveConfig();
+      }
+    }
+
+    async function refreshData() {
+      metricsStreamManager.disconnect();
+      chartInstances.forEach(c => c && c.destroy());
+      chartInstances.clear();
+      chartDataBuffer.clear();
+      await initialize();
+      applyFiltersAndSort();
+    }
+
+    // Entry point
+    window.onload = async function() {
+      initTheme();
+      await checkLoginStatus();
+      await initialize();
+    };
+
+    // Auto refresh
+    setInterval(updateSummary, 5000);
+    setInterval(refreshData, 300000);
   </script>
 </body>
 </html>

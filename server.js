@@ -39,6 +39,19 @@ console.log(`SHOW_PRIVATE 配置: ${SHOW_PRIVATE ? '未登录时展示 private �
 const sessions = new Map();
 const SESSION_TIMEOUT = 24 * 60 * 60 * 1000; // 24小时超时
 
+// 定时重启配置存储
+const scheduledRestarts = new Map(); // key: repoId, value: { enabled: boolean, intervalHours: number, lastRestart: Date, timerId: number }
+
+// 保活配置存储
+const keepAliveConfigs = new Map(); // key: repoId, value: { enabled: boolean, intervalMinutes: number, lastPing: Date, timerId: number }
+
+// 全局保活开关
+let globalKeepAlive = {
+  enabled: false,
+  intervalMinutes: 30,
+  timerId: null
+};
+
 // 缓存管理
 class SpaceCache {
   constructor() {
@@ -66,6 +79,157 @@ class SpaceCache {
 }
 
 const spaceCache = new SpaceCache();
+
+// 执行定时重启
+async function executeScheduledRestart(repoId) {
+  const config = scheduledRestarts.get(repoId);
+  if (!config || !config.enabled) return;
+
+  const spaces = spaceCache.getAll();
+  const space = spaces.find(s => s.repo_id === repoId);
+  if (!space) {
+    console.error(`定时重启失败: Space ${repoId} 未找到`);
+    return;
+  }
+
+  const token = userTokenMapping[space.username];
+  if (!token) {
+    console.error(`定时重启失败: Space ${repoId} 无 Token 配置`);
+    return;
+  }
+
+  try {
+    const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+    await axios.post(`https://huggingface.co/api/spaces/${repoId}/restart`, {}, { headers });
+    config.lastRestart = new Date();
+    console.log(`定时重启成功: ${repoId}`);
+  } catch (error) {
+    console.error(`定时重启失败 (${repoId}):`, error.message);
+  }
+}
+
+// 设置定时重启
+function setScheduledRestart(repoId, intervalHours, enabled = true) {
+  // 清除现有定时器
+  const existing = scheduledRestarts.get(repoId);
+  if (existing && existing.timerId) {
+    clearInterval(existing.timerId);
+  }
+
+  if (!enabled) {
+    scheduledRestarts.delete(repoId);
+    console.log(`已禁用定时重启: ${repoId}`);
+    return;
+  }
+
+  const intervalMs = intervalHours * 60 * 60 * 1000;
+  const timerId = setInterval(() => executeScheduledRestart(repoId), intervalMs);
+
+  scheduledRestarts.set(repoId, {
+    enabled: true,
+    intervalHours,
+    lastRestart: null,
+    timerId
+  });
+
+  console.log(`已设置定时重启: ${repoId}, 间隔 ${intervalHours} 小时`);
+}
+
+// 执行保活 ping
+async function executeKeepAlivePing(repoId) {
+  const spaces = spaceCache.getAll();
+  const space = spaces.find(s => s.repo_id === repoId);
+  if (!space) {
+    console.log(`保活 ping 跳过: Space ${repoId} 未找到`);
+    return;
+  }
+
+  try {
+    const url = space.url;
+    await axios.get(url, { timeout: 30000 });
+    const config = keepAliveConfigs.get(repoId);
+    if (config) {
+      config.lastPing = new Date();
+    }
+    console.log(`保活 ping 成功: ${repoId} -> ${url}`);
+  } catch (error) {
+    console.log(`保活 ping 失败 (${repoId}): ${error.message}`);
+  }
+}
+
+// 设置单个实例保活
+function setKeepAlive(repoId, intervalMinutes, enabled = true) {
+  // 清除现有定时器
+  const existing = keepAliveConfigs.get(repoId);
+  if (existing && existing.timerId) {
+    clearInterval(existing.timerId);
+  }
+
+  if (!enabled) {
+    keepAliveConfigs.delete(repoId);
+    console.log(`已禁用保活: ${repoId}`);
+    return;
+  }
+
+  const intervalMs = intervalMinutes * 60 * 1000;
+  const timerId = setInterval(() => executeKeepAlivePing(repoId), intervalMs);
+
+  // 立即执行一次
+  executeKeepAlivePing(repoId);
+
+  keepAliveConfigs.set(repoId, {
+    enabled: true,
+    intervalMinutes,
+    lastPing: new Date(),
+    timerId
+  });
+
+  console.log(`已设置保活: ${repoId}, 间隔 ${intervalMinutes} 分钟`);
+}
+
+// 全局保活 - ping 所有运行中的实例
+async function executeGlobalKeepAlive() {
+  if (!globalKeepAlive.enabled) return;
+
+  const spaces = spaceCache.getAll();
+  const runningSpaces = spaces.filter(s => s.status.toLowerCase() === 'running' || s.status.toLowerCase() === 'sleeping');
+
+  console.log(`全局保活开始: 共 ${runningSpaces.length} 个实例`);
+
+  for (const space of runningSpaces) {
+    try {
+      await axios.get(space.url, { timeout: 30000 });
+      console.log(`全局保活 ping 成功: ${space.repo_id}`);
+    } catch (error) {
+      console.log(`全局保活 ping 失败 (${space.repo_id}): ${error.message}`);
+    }
+    // 间隔 5 秒避免请求过快
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  }
+
+  console.log(`全局保活完成`);
+}
+
+// 设置全局保活
+function setGlobalKeepAlive(intervalMinutes, enabled = true) {
+  if (globalKeepAlive.timerId) {
+    clearInterval(globalKeepAlive.timerId);
+    globalKeepAlive.timerId = null;
+  }
+
+  globalKeepAlive.enabled = enabled;
+  globalKeepAlive.intervalMinutes = intervalMinutes;
+
+  if (enabled) {
+    const intervalMs = intervalMinutes * 60 * 1000;
+    globalKeepAlive.timerId = setInterval(executeGlobalKeepAlive, intervalMs);
+    // 立即执行一次
+    executeGlobalKeepAlive();
+    console.log(`已启用全局保活, 间隔 ${intervalMinutes} 分钟`);
+  } else {
+    console.log(`已禁用全局保活`);
+  }
+}
 
 // 用于获取 Spaces 数据的函数，带有重试机制
 async function fetchSpacesWithRetry(username, token, maxRetries = 3, retryDelay = 2000) {
@@ -336,6 +500,114 @@ app.post('/api/proxy/rebuild/:repoId(*)', authenticateToken, async (req, res) =>
       res.status(500).json({ error: '重建 space 失败', details: error.message });
     }
   }
+});
+
+// 获取定时重启配置
+app.get('/api/schedule/restart/:repoId(*)', authenticateToken, (req, res) => {
+  const { repoId } = req.params;
+  const config = scheduledRestarts.get(repoId);
+  if (config) {
+    res.json({
+      enabled: config.enabled,
+      intervalHours: config.intervalHours,
+      lastRestart: config.lastRestart
+    });
+  } else {
+    res.json({ enabled: false, intervalHours: 0, lastRestart: null });
+  }
+});
+
+// 设置定时重启配置
+app.post('/api/schedule/restart/:repoId(*)', authenticateToken, (req, res) => {
+  const { repoId } = req.params;
+  const { enabled, intervalHours } = req.body;
+
+  if (enabled && (!intervalHours || intervalHours < 1)) {
+    return res.status(400).json({ error: '间隔时间必须至少为 1 小时' });
+  }
+
+  setScheduledRestart(repoId, intervalHours || 24, enabled);
+  res.json({ success: true, message: enabled ? `已设置定时重启: 每 ${intervalHours} 小时` : '已禁用定时重启' });
+});
+
+// 获取保活配置
+app.get('/api/keepalive/:repoId(*)', authenticateToken, (req, res) => {
+  const { repoId } = req.params;
+  const config = keepAliveConfigs.get(repoId);
+  if (config) {
+    res.json({
+      enabled: config.enabled,
+      intervalMinutes: config.intervalMinutes,
+      lastPing: config.lastPing
+    });
+  } else {
+    res.json({ enabled: false, intervalMinutes: 0, lastPing: null });
+  }
+});
+
+// 设置保活配置
+app.post('/api/keepalive/:repoId(*)', authenticateToken, (req, res) => {
+  const { repoId } = req.params;
+  const { enabled, intervalMinutes } = req.body;
+
+  if (enabled && (!intervalMinutes || intervalMinutes < 1)) {
+    return res.status(400).json({ error: '间隔时间必须至少为 1 分钟' });
+  }
+
+  setKeepAlive(repoId, intervalMinutes || 30, enabled);
+  res.json({ success: true, message: enabled ? `已设置保活: 每 ${intervalMinutes} 分钟` : '已禁用保活' });
+});
+
+// 获取全局保活配置
+app.get('/api/keepalive-global', authenticateToken, (req, res) => {
+  res.json({
+    enabled: globalKeepAlive.enabled,
+    intervalMinutes: globalKeepAlive.intervalMinutes
+  });
+});
+
+// 设置全局保活配置
+app.post('/api/keepalive-global', authenticateToken, (req, res) => {
+  const { enabled, intervalMinutes } = req.body;
+
+  if (enabled && (!intervalMinutes || intervalMinutes < 1)) {
+    return res.status(400).json({ error: '间隔时间必须至少为 1 分钟' });
+  }
+
+  setGlobalKeepAlive(intervalMinutes || 30, enabled);
+  res.json({ success: true, message: enabled ? `已启用全局保活: 每 ${intervalMinutes} 分钟` : '已禁用全局保活' });
+});
+
+// 获取所有定时任务状态
+app.get('/api/schedule/status', authenticateToken, (req, res) => {
+  const restarts = [];
+  scheduledRestarts.forEach((config, repoId) => {
+    restarts.push({
+      repoId,
+      enabled: config.enabled,
+      intervalHours: config.intervalHours,
+      lastRestart: config.lastRestart
+    });
+  });
+
+  const keepAlives = [];
+  keepAliveConfigs.forEach((config, repoId) => {
+    keepAlives.push({
+      repoId,
+      enabled: config.enabled,
+      intervalMinutes: config.intervalMinutes,
+      lastPing: config.lastPing
+    });
+  });
+
+  res.json({
+    scheduledRestarts: restarts,
+    keepAlives: keepAlives,
+    globalKeepAlive: {
+      enabled: globalKeepAlive.enabled,
+      intervalMinutes: globalKeepAlive.intervalMinutes
+    }
+  });
 });
 
 // 外部 API 服务（类似于 Flask 的 /api/v1）
